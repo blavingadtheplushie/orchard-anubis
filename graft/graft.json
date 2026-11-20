@@ -1,7 +1,7 @@
 {
   "id": "anubis",
   "name": "Anubis challenge",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "publisher": "blavingad",
   "description": "Put an Anubis proof-of-work challenge in front of apps, toggled per app from a Challenge tab.",
   "homepage": "https://github.com/blavingadtheplushie/orchard-anubis",
