@@ -1,0 +1,47 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata: {name: anubis, namespace: kube-system, labels: {app: anubis}}
+spec:
+  replicas: 1
+  selector: {matchLabels: {app: anubis}}
+  template:
+    metadata: {labels: {app: anubis}}
+    spec:
+      securityContext: {runAsNonRoot: true, runAsUser: 1000, seccompProfile: {type: RuntimeDefault}}
+      containers:
+      - name: anubis
+        image: ghcr.io/techarohq/anubis:v1.28.2
+        env:
+        - {name: BIND, value: ":8923"}
+        - {name: METRICS_BIND, value: ":9090"}
+        - {name: TARGET, value: " "}
+        - {name: DIFFICULTY, value: "4"}
+        - {name: SERVE_ROBOTS_TXT, value: "false"}
+        - {name: REDIRECT_DOMAINS, value: "blavingad.ink,*.orc.notri1.fr,*.notri1.fr"}
+        - {name: WEBMASTER_EMAIL, value: "me@blavingad.ink"}
+        envFrom: [{secretRef: {name: anubis-key}}]
+        ports: [{containerPort: 8923, name: http}]
+        resources: {requests: {cpu: 20m, memory: 64Mi}, limits: {memory: 256Mi}}
+        securityContext: {allowPrivilegeEscalation: false, readOnlyRootFilesystem: true, capabilities: {drop: [ALL]}}
+        readinessProbe: {httpGet: {path: /.within.website/x/cmd/anubis/static/js/main.mjs, port: 8923}, periodSeconds: 10}
+---
+apiVersion: v1
+kind: Service
+metadata: {name: anubis, namespace: kube-system}
+spec: {selector: {app: anubis}, ports: [{name: http, port: 8923, targetPort: 8923}]}
+---
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata: {name: anubis-auth, namespace: kube-system}
+spec:
+  forwardAuth:
+    address: http://anubis.kube-system.svc.cluster.local:8923/.within.website/x/cmd/anubis/api/check
+---
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata: {name: anubis-challenge, namespace: kube-system}
+spec:
+  errors:
+    status: ["401"]
+    service: {name: anubis, port: 8923}
+    query: "/"

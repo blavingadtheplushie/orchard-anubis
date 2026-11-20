@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: ConfigMap
+metadata: {name: anubis-policy, namespace: kube-system}
+data:
+  policy.yaml: |
+    bots:
+      - import: (data)/meta/default-config.yaml
+    # forwardAuth: anything 2xx = allowed by traefik, so deny/challenge must NOT be 200
+    status_codes:
+      CHALLENGE: 401
+      DENY: 403

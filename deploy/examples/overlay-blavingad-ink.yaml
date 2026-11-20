@@ -1,0 +1,18 @@
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: anubis-blavingad-ink
+  namespace: kube-system
+  labels: {app.kubernetes.io/managed-by: orchard-anubis}
+spec:
+  entryPoints: [web, websecure]
+  routes:
+  - match: Host(`blavingad.ink`) && PathPrefix(`/.within.website/`)
+    kind: Rule
+    priority: 100001
+    services: [{name: anubis, namespace: kube-system, port: 8923}]
+  - match: Host(`blavingad.ink`)
+    kind: Rule
+    priority: 100000
+    middlewares: [{name: anubis-challenge, namespace: kube-system}, {name: anubis-auth, namespace: kube-system}]
+    services: [{name: site, namespace: blavingad-blavingad-site-0f92ab, port: 80}]
