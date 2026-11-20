@@ -2,7 +2,7 @@
 
 An [Orchard](https://github.com/hackclub/orchard) graft that puts an [Anubis](https://github.com/TecharoHQ/anubis) proof-of-work challenge in front of apps, toggled per app from the Orchard dashboard.
 
-> Status: **early work in progress.** The cluster side works and is tested by hand; the graft (UI + API) is being written.
+> Status: **0.1.0, early.** Running on one instance (orchard.notri1.fr).
 
 ## How it works
 
@@ -27,12 +27,36 @@ Disabling protection deletes the overlay; Orchard's own ingress takes over again
 
 - Anubis protection and Orchard's own protection (`password` / `orchard`) on the same domain are mutually exclusive: the overlay would bypass Orchard's protection proxy. The graft refuses this combination.
 
-## Planned graft
+## The graft (`graft/`)
 
-- `deployment.tabs` slot: a **Challenge** tab per app (on/off, difficulty, excluded paths).
-- NestJS module with its own `ext_anubis` schema; `requireProjectEdit` on writes; audit log entries.
-- `kube.apply` door to server-side-apply the overlays; reconcile on rollout events.
-- Instance settings: redirect domains, default policy.
+- A **Challenge** tab on every app (`deployment.tabs`): on/off and excluded paths (APIs, webhooks).
+- API under `/apiv1/anubis/deployments/:id` (`GET` needs project view, `PUT` needs project edit), with `anubis.enabled` / `anubis.disabled` audit entries.
+- Its own table `ext_anubis.protected_apps`. Domains come from Orchard's `ingresses` table (read-only `coreReads`).
+- A reconciler (leader only, every minute and right after each change) server-side-applies one overlay `IngressRoute` per protected domain, and deletes overlays that are no longer wanted. It only ever deletes routes labelled `orchard-anubis/managed=true`.
+- Domains using Orchard's own protection (`password` / `orchard`) or redirects are skipped and shown as "not covered".
+
+## Install
+
+1. Cluster side: `kubectl apply -f deploy/cluster/` (Anubis, middlewares, policy, RBAC for `orchard-server`), and set `allowCrossNamespace: true` on Traefik's CRD provider.
+2. Trust the publisher key in your Orchard values:
+
+   ```yaml
+   graftSettings:
+     keys: ["Yx6ZRujFLIMUCEYYNFqNWsf8ZpwZWDmSx24Rt4D8VdM="]
+   grafts:
+     - id: anubis
+       version: 0.1.0
+       source: https://github.com/blavingadtheplushie/orchard-anubis/releases/download/v0.1.0/anubis-0.1.0.graft
+       digest: sha256:<see release notes>
+   ```
+
+3. `helm upgrade` Orchard. The tab shows up on every app.
+
+## Build
+
+```sh
+cd graft && npm install && npx graft doctor && npx graft pack --key <key.pem>
+```
 
 ## License
 

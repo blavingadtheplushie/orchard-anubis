@@ -1,0 +1,27 @@
+{
+  "id": "anubis",
+  "name": "Anubis challenge",
+  "version": "0.1.0",
+  "publisher": "blavingad",
+  "description": "Put an Anubis proof-of-work challenge in front of apps, toggled per app from a Challenge tab.",
+  "homepage": "https://github.com/blavingadtheplushie/orchard-anubis",
+  "engines": { "platform": ">=2.90.0 <3", "sdk": "^1.0.0" },
+  "requires": {
+    "kubernetes": {
+      "crds": ["ingressroutes.traefik.io", "middlewares.traefik.io"],
+      "verbs": [
+        { "group": "traefik.io", "resource": "ingressroutes", "verb": "list", "namespace": "kube-system" },
+        { "group": "traefik.io", "resource": "ingressroutes", "verb": "patch", "namespace": "kube-system" },
+        { "group": "traefik.io", "resource": "ingressroutes", "verb": "delete", "namespace": "kube-system" }
+      ]
+    }
+  },
+  "capabilities": ["db", "audit", "kube.read", "kube.apply"],
+  "database": {
+    "coreReads": {
+      "deployments": ["id", "project_id", "name", "display_name"],
+      "ingresses": ["id", "deployment_id", "service_id", "namespace", "host", "path", "protection_mode", "redirect_target", "service_port"],
+      "services": ["id", "deployment_id", "name", "port"]
+    }
+  }
+}
